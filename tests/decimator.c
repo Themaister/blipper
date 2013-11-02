@@ -11,8 +11,8 @@ int main(int argc, char *argv[])
    blipper_t *blip[8];
 
    unsigned c, channels;
-   unsigned taps = 64, decimation = 64;
-   double cutoff = 0.85, beta = 8.0;
+   unsigned taps = 32, decimation = 64;
+   double cutoff = 0.85, beta = 6.5;
 
    if (argc < 3)
    {
