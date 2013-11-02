@@ -27,6 +27,10 @@
 #ifndef BLIPPER_H__
 #define BLIPPER_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct blipper blipper_t;
 
 /* Create a new blipper.
@@ -82,6 +86,10 @@ unsigned blipper_read_avail(blipper_t *blip);
  */
 void blipper_read(blipper_t *blip, float *output, unsigned samples,
       unsigned stride);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

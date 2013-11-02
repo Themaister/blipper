@@ -146,13 +146,15 @@ static float *blipper_prefilter_sinc(float *filter, unsigned phases,
 {
    unsigned i;
    unsigned taps = *out_taps;
+   float *tmp_filter;
    float *new_filter = malloc((phases * taps + phases) * sizeof(*filter));
    if (!new_filter)
       goto error;
 
-   filter = realloc(filter, (phases * taps + phases) * sizeof(*filter));
-   if (!filter)
+   tmp_filter = realloc(filter, (phases * taps + phases) * sizeof(*filter));
+   if (!tmp_filter)
       goto error;
+   filter = tmp_filter;
 
    /* Integrate. */
    new_filter[0] = filter[0];
@@ -243,7 +245,7 @@ blipper_t *blipper_new(unsigned taps, double cutoff, double beta,
 
    blip->phases = decimation;
    blip->phases_log2 = log2_int(decimation);
-   blip->amp = 1.0f / decimation;
+   blip->amp = 0.75f / decimation; /* Safeguards against clipping due to ringing. */
 
    if (!blipper_create_filter_bank(blip, taps, cutoff, beta))
       goto error;
