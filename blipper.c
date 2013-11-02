@@ -219,6 +219,14 @@ static int blipper_create_filter_bank(blipper_t *blip, unsigned taps,
    return 1;
 }
 
+static unsigned log2_int(unsigned v)
+{
+   unsigned ret;
+   v >>= 1;
+   for (ret = 0; v; v >>= 1, ret++);
+   return ret;
+}
+
 blipper_t *blipper_new(unsigned taps, double cutoff, double beta,
       unsigned decimation, unsigned buffer_samples)
 {
@@ -234,7 +242,7 @@ blipper_t *blipper_new(unsigned taps, double cutoff, double beta,
       return NULL;
 
    blip->phases = decimation;
-   blip->phases_log2 = (unsigned)log2(decimation);
+   blip->phases_log2 = log2_int(decimation);
    blip->amp = 1.0f / decimation;
 
    if (!blipper_create_filter_bank(blip, taps, cutoff, beta))

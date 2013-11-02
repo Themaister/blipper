@@ -1,10 +1,10 @@
-TARGET := libblipper.so
+TARGET := libblipper.a
 
 SOURCES := $(wildcard *.c)
 OBJECTS := $(SOURCES:.c=.o)
 HEADERS := $(wildcard *.h)
 
-CFLAGS += -ansi -D_GNU_SOURCE -pedantic -Wall -fPIC
+CFLAGS += -ansi -pedantic -Wall
 LDFLAGS += -lm -shared -Wl,-no-undefined
 
 ifeq ($(DEBUG), 1)
@@ -19,7 +19,7 @@ all: $(TARGET)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(TARGET): $(OBJECTS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(AR) rcs $@ $^
 
 clean:
 	rm -f $(OBJECTS) $(TARGET)
