@@ -1,21 +1,16 @@
-TARGET := blipper
+TARGET := libblipper.so
 
 SOURCES := $(wildcard *.c)
 OBJECTS := $(SOURCES:.c=.o)
 HEADERS := $(wildcard *.h)
 
-CFLAGS += -std=gnu99 -pedantic -Wall $(shell pkg-config sndfile --cflags)
-LDFLAGS += -lm $(shell pkg-config sndfile --libs)
+CFLAGS += -ansi -D_GNU_SOURCE -pedantic -Wall -fPIC
+LDFLAGS += -lm -shared -Wl,-no-undefined
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
 else
    CFLAGS += -O2 -ffast-math -g
-endif
-
-ifeq ($(PROFILING), 1)
-   CFLAGS += -pg
-   LDFLAGS += -pg
 endif
 
 all: $(TARGET)
