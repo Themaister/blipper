@@ -135,7 +135,7 @@ static float *blipper_create_sinc(unsigned phases, unsigned taps,
    double sidelobes, window_mod, window_phase, sinc_phase;
    float *filter;
 
-   filter = malloc(phases * taps * sizeof(*filter));
+   filter = (float*)malloc(phases * taps * sizeof(*filter));
    if (!filter)
       return NULL;
 
@@ -172,11 +172,11 @@ static float *blipper_prefilter_sinc(float *filter, unsigned phases,
    unsigned i;
    unsigned taps = *out_taps;
    float *tmp_filter;
-   float *new_filter = malloc((phases * taps + phases) * sizeof(*filter));
+   float *new_filter = (float*)malloc((phases * taps + phases) * sizeof(*filter));
    if (!new_filter)
       goto error;
 
-   tmp_filter = realloc(filter, (phases * taps + phases) * sizeof(*filter));
+   tmp_filter = (float*)realloc(filter, (phases * taps + phases) * sizeof(*filter));
    if (!tmp_filter)
       goto error;
    filter = tmp_filter;
@@ -210,7 +210,7 @@ static float *blipper_interleave_sinc(float *filter, unsigned phases,
       unsigned taps)
 {
    unsigned t, p;
-   float *new_filter = malloc(phases * taps * sizeof(*filter));
+   float *new_filter = (float*)malloc(phases * taps * sizeof(*filter));
    if (!new_filter)
       goto error;
 
@@ -230,7 +230,7 @@ error:
 static blipper_sample_t *blipper_quantize_sinc(float *filter, unsigned taps, float amp)
 {
    unsigned t;
-   blipper_sample_t *filt = malloc(taps * sizeof(*filt));
+   blipper_sample_t *filt = (blipper_sample_t*)malloc(taps * sizeof(*filt));
    if (!filt)
       goto error;
 
@@ -266,7 +266,7 @@ static int blipper_create_filter_bank(blipper_t *blip, unsigned taps,
    if (!sinc_filter)
       return 0;
 
-   blip->filter_bank = blipper_quantize_sinc(sinc_filter, blip->phases * taps, 0.85f / blip->phases);
+   blip->filter_bank = blipper_quantize_sinc(sinc_filter, blip->phases * taps, 0.75f / blip->phases);
    if (!blip->filter_bank)
       return 0;
 
@@ -300,7 +300,7 @@ blipper_t *blipper_new(unsigned taps, double cutoff, double beta,
       return NULL;
    }
 
-   blip = calloc(1, sizeof(*blip));
+   blip = (blipper_t*)calloc(1, sizeof(*blip));
    if (!blip)
       return NULL;
 
@@ -310,7 +310,7 @@ blipper_t *blipper_new(unsigned taps, double cutoff, double beta,
    if (!blipper_create_filter_bank(blip, taps, cutoff, beta))
       goto error;
 
-   blip->output_buffer = calloc(buffer_samples + blip->taps,
+   blip->output_buffer = (blipper_fixed_t*)calloc(buffer_samples + blip->taps,
          sizeof(*blip->output_buffer));
    if (!blip->output_buffer)
       goto error;
