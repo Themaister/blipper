@@ -4,7 +4,7 @@ SOURCES := $(wildcard *.c)
 OBJECTS := $(SOURCES:.c=.o)
 HEADERS := $(wildcard *.h)
 
-CFLAGS += -ansi -pedantic -Wall $(shell pkg-config sndfile --cflags)
+CFLAGS += -ansi -pedantic -Wall $(shell pkg-config sndfile --cflags) -DHAVE_STDINT_H
 LDFLAGS += -lm -Wl,-no-undefined $(shell pkg-config sndfile --libs)
 
 ifeq ($(DEBUG), 1)

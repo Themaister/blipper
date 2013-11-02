@@ -33,20 +33,19 @@
 
 struct blipper
 {
-   float *output_buffer;
+   blipper_fixed_t *output_buffer;
    unsigned output_avail;
    unsigned output_buffer_samples;
 
-   float *filter_bank;
+   blipper_sample_t *filter_bank;
 
    unsigned phase;
    unsigned phases;
    unsigned phases_log2;
    unsigned taps;
 
-   float integrator;
-   float amp;
-   float last_sample;
+   blipper_fixed_t integrator;
+   blipper_sample_t last_sample;
 };
 
 void blipper_free(blipper_t *blip)
@@ -202,10 +201,31 @@ error:
    return NULL;
 }
 
+static blipper_sample_t *blipper_quantize_sinc(float *filter, unsigned taps, float amp)
+{
+   unsigned t;
+   blipper_sample_t *filt = malloc(taps * sizeof(*filt));
+   if (!filt)
+      goto error;
+
+   for (t = 0; t < taps; t++)
+      filt[t] = (blipper_sample_t)floor(filter[t] * 0x7fff * amp + 0.5);
+
+   free(filter);
+   return filt;
+
+error:
+   free(filter);
+   free(filt);
+   return NULL;
+}
+
 static int blipper_create_filter_bank(blipper_t *blip, unsigned taps,
       double cutoff, double beta)
 {
-   float *sinc_filter = blipper_create_sinc(blip->phases, taps, cutoff, beta);
+   float *sinc_filter;
+
+   sinc_filter = blipper_create_sinc(blip->phases, taps, cutoff, beta);
    if (!sinc_filter)
       return 0;
 
@@ -216,7 +236,10 @@ static int blipper_create_filter_bank(blipper_t *blip, unsigned taps,
    if (!sinc_filter)
       return 0;
 
-   blip->filter_bank = sinc_filter;
+   blip->filter_bank = blipper_quantize_sinc(sinc_filter, blip->phases * taps, 0.85f / blip->phases);
+   if (!blip->filter_bank)
+      return 0;
+
    blip->taps = taps;
    return 1;
 }
@@ -233,6 +256,14 @@ blipper_t *blipper_new(unsigned taps, double cutoff, double beta,
       unsigned decimation, unsigned buffer_samples)
 {
    blipper_t *blip = NULL;
+
+   /* Sanity check. Not strictly required to be supported in C. */
+   if ((-3 >> 2) != -1)
+   {
+      fprintf(stderr, "Integer right shift not supported.\n");
+      return NULL;
+   }
+
    if ((decimation & (decimation - 1)) != 0)
    {
       fprintf(stderr, "[blipper]: Decimation factor must be POT.\n");
@@ -245,7 +276,6 @@ blipper_t *blipper_new(unsigned taps, double cutoff, double beta,
 
    blip->phases = decimation;
    blip->phases_log2 = log2_int(decimation);
-   blip->amp = 0.75f / decimation; /* Safeguards against clipping due to ringing. */
 
    if (!blipper_create_filter_bank(blip, taps, cutoff, beta))
       goto error;
@@ -263,11 +293,11 @@ error:
    return NULL;
 }
 
-void blipper_push_delta(blipper_t *blip, float delta, unsigned clocks_step)
+void blipper_push_delta(blipper_t *blip, blipper_fixed_t delta, unsigned clocks_step)
 {
    unsigned target_output, filter_phase, taps, i;
-   const float *response;
-   float *target;
+   const blipper_sample_t *response;
+   blipper_fixed_t *target;
 
    blip->phase += clocks_step;
 
@@ -278,25 +308,27 @@ void blipper_push_delta(blipper_t *blip, float delta, unsigned clocks_step)
 
    target = blip->output_buffer + target_output;
    taps = blip->taps;
+
+   /* SIMD target */
    for (i = 0; i < taps; i++)
       target[i] += delta * response[i];
 
    blip->output_avail = target_output;
 }
 
-void blipper_push_samples(blipper_t *blip, const float *data,
+void blipper_push_samples(blipper_t *blip, const blipper_sample_t *data,
       unsigned samples, unsigned stride)
 {
    unsigned s;
    unsigned clocks_skip = 0;
-   float last = blip->last_sample;
+   blipper_sample_t last = blip->last_sample;
 
    for (s = 0; s < samples; s++, data += stride)
    {
-      float val = *data;
+      blipper_sample_t val = *data;
       if (val != last)
       {
-         blipper_push_delta(blip, val - last, clocks_skip + 1);
+         blipper_push_delta(blip, (blipper_fixed_t)val - (blipper_fixed_t)last, clocks_skip + 1);
          clocks_skip = 0;
          last = val;
       }
@@ -314,17 +346,21 @@ unsigned blipper_read_avail(blipper_t *blip)
    return blip->output_avail;
 }
 
-void blipper_read(blipper_t *blip, float *output, unsigned samples,
+void blipper_read(blipper_t *blip, blipper_sample_t *output, unsigned samples,
       unsigned stride)
 {
    unsigned s;
-   float sum = blip->integrator;
-   const float *out = blip->output_buffer;
+   blipper_sample_t quant;
+   blipper_fixed_t sum = blip->integrator;
+   const blipper_fixed_t *out = blip->output_buffer;
 
    for (s = 0; s < samples; s++, output += stride)
    {
+      /* Should do a saturated add here. */
       sum += out[s];
-      *output = blip->amp * sum;
+
+      quant = (sum + 0x4000) >> 15;
+      *output = quant;
    }
 
    /* Don't bother with ring buffering.

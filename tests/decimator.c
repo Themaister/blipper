@@ -7,7 +7,7 @@ int main(int argc, char *argv[])
 {
    SF_INFO in_info = {0}, out_info = {0};
    SNDFILE *in_file, *out_file;
-   float *input_buffer, *output_buffer;
+   blipper_sample_t *input_buffer, *output_buffer;
    blipper_t *blip[8];
 
    unsigned c, channels;
@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 
    out_info.samplerate = in_info.samplerate / decimation;
    out_info.channels = in_info.channels;
-   out_info.format = SF_FORMAT_WAV | SF_FORMAT_FLOAT;
+   out_info.format = in_info.format;
 
    out_file = sf_open(argv[2], SFM_WRITE, &out_info);
    if (!out_file)
@@ -50,15 +50,15 @@ int main(int argc, char *argv[])
          return EXIT_FAILURE;
    }
 
-   input_buffer = malloc(1024 * decimation * channels * sizeof(float));
-   output_buffer = malloc(1024 * channels * sizeof(float));
+   input_buffer = malloc(1024 * decimation * channels * sizeof(*input_buffer));
+   output_buffer = malloc(1024 * channels * sizeof(*output_buffer));
    if (!input_buffer || !output_buffer)
       return EXIT_FAILURE;
 
    for (;;)
    {
       unsigned avail;
-      unsigned read_frames = sf_readf_float(in_file, input_buffer, 1024);
+      unsigned read_frames = sf_readf_short(in_file, input_buffer, 1024);
       if (!read_frames)
          break;
 
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
       for (c = 0; c < channels; c++)
          blipper_read(blip[c], output_buffer + c, avail, channels);
 
-      sf_writef_float(out_file, output_buffer, avail);
+      sf_writef_short(out_file, output_buffer, avail);
    }
 
    sf_close(in_file);

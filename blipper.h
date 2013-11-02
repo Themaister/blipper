@@ -31,7 +31,31 @@
 extern "C" {
 #endif
 
+#include <limits.h>
+
 typedef struct blipper blipper_t;
+
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+typedef int16_t blipper_sample_t;
+typedef int32_t blipper_fixed_t;
+#else
+#if SHRT_MAX == 0x7fff
+typedef short blipper_sample_t;
+#elif INT_MAX == 0x7fff
+typedef int blipper_sample_t;
+#else
+#error "Cannot find suitable type for blipper_sampler_t."
+#endif
+
+#if INT_MAX == 0x7fffffffl
+typedef int blipper_fixed_t;
+#elif LONG_MAX == 0x7fffffffl
+typedef long blipper_fixed_t;
+#else
+#error "Cannot find suitable type for blipper_fixed_t."
+#endif
+#endif
 
 /* Create a new blipper.
  * taps: Number of filter taps per impulse.
@@ -63,14 +87,14 @@ void blipper_free(blipper_t *blip);
  * The caller must ensure not to push deltas in a way that can destabilize
  * the final integration.
  */
-void blipper_push_delta(blipper_t *blip, float delta, unsigned clocks_step);
+void blipper_push_delta(blipper_t *blip, blipper_fixed_t delta, unsigned clocks_step);
 
 /* Push raw samples. blipper will find the deltas themself and push them.
  * stride is the number of samples between each sample to be used.
  * This can be used to push interleaved stereo data to two independent
  * blippers.
  */
-void blipper_push_samples(blipper_t *blip, const float *delta,
+void blipper_push_samples(blipper_t *blip, const blipper_sample_t *delta,
       unsigned samples, unsigned stride);
 
 /* Returns the number of samples available for reading using
@@ -84,7 +108,7 @@ unsigned blipper_read_avail(blipper_t *blip);
  * between each output sample in output.
  * Can be used to write to an interleaved stereo buffer.
  */
-void blipper_read(blipper_t *blip, float *output, unsigned samples,
+void blipper_read(blipper_t *blip, blipper_sample_t *output, unsigned samples,
       unsigned stride);
 
 #ifdef __cplusplus
