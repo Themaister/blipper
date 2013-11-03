@@ -27,6 +27,10 @@
 #ifndef BLIPPER_H__
 #define BLIPPER_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Compile time configurables. */
 #ifndef BLIPPER_LOG_PERFORMANCE
 #define BLIPPER_LOG_PERFORMANCE 0
@@ -46,11 +50,9 @@
 #if BLIPPER_FIXED_POINT
 #define BLIPPER_MANGLE(x) x##_fixed
 #else
-#define BLIPPER_MANGLE(x) x##_##BLIPPER_REAL_T
-#endif
-
-#ifdef __cplusplus
-extern "C" {
+#define BLIPPER_CONCAT2(a, b) a ## b
+#define BLIPPER_CONCAT(a, b) BLIPPER_CONCAT2(a, b)
+#define BLIPPER_MANGLE(x) BLIPPER_CONCAT(x##_, BLIPPER_REAL_T)
 #endif
 
 #include <limits.h>
