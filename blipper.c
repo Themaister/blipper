@@ -461,7 +461,7 @@ void blipper_read(blipper_t *blip, blipper_sample_t *output, unsigned samples,
     * The entire buffer should be read out ideally anyways. */
    memmove(blip->output_buffer, blip->output_buffer + samples,
          (blip->output_avail + blip->taps - samples) * sizeof(*out));
-   memset(blip->output_buffer + blip->taps, 0, samples * sizeof(*out));
+   memset(blip->output_buffer + blip->output_avail + blip->taps - samples, 0, samples * sizeof(*out));
    blip->output_avail -= samples;
    blip->phase -= samples << blip->phases_log2;
 
