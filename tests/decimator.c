@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 
    for (c = 0; c < channels; c++)
    {
-      blip[c] = blipper_new(taps, cutoff, beta, decimation, 1024);
+      blip[c] = blipper_new(taps, cutoff, beta, decimation, 1024, NULL);
       if (!blip[c])
          return EXIT_FAILURE;
    }
