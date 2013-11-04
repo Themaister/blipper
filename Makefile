@@ -1,4 +1,4 @@
-TARGET := libblipper.a test_decimator
+TARGET := libblipper.a test_decimator test_sawtooth test_square test_triangle
 
 OBJECTS := blipper_float.o blipper_double.o blipper_fixed.o
 HEADERS := $(wildcard *.h)
@@ -24,12 +24,21 @@ blipper_fixed.o: blipper.c $(HEADERS)
 	$(CC) -c -o $@ $< $(CFLAGS) -DBLIPPER_FIXED_POINT=1
 
 %.o: %.c $(HEADERS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) -c -o $@ $< $(CFLAGS) -DBLIPPER_FIXED_POINT=1
 
 libblipper.a: $(OBJECTS)
 	$(AR) rcs $@ $^
 
 test_decimator: tests/decimator.o libblipper.a 
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+test_sawtooth: tests/sawtooth.o libblipper.a 
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+test_square: tests/square.o libblipper.a 
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+test_triangle: tests/triangle.o libblipper.a 
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:

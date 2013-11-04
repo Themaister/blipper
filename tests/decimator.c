@@ -58,7 +58,11 @@ int main(int argc, char *argv[])
    for (;;)
    {
       unsigned avail;
+#if BLIPPER_FIXED_POINT
       unsigned read_frames = sf_readf_short(in_file, input_buffer, 1024);
+#else
+      unsigned read_frames = sf_readf_float(in_file, input_buffer, 1024);
+#endif
       if (!read_frames)
          break;
 
@@ -69,7 +73,11 @@ int main(int argc, char *argv[])
       for (c = 0; c < channels; c++)
          blipper_read(blip[c], output_buffer + c, avail, channels);
 
+#if BLIPPER_FIXED_POINT
       sf_writef_short(out_file, output_buffer, avail);
+#else
+      sf_writef_float(out_file, output_buffer, avail);
+#endif
    }
 
    sf_close(in_file);
